@@ -10,7 +10,7 @@ namespace QuizApp.Models
         // We will link this to ApplicationUser later
 
         public int QuizId { get; set; }
-        public Quiz Quiz { get; set; } = null!;
+        public Quiz? Quiz { get; set; }
 
         public DateTime StartedAt { get; set; } = DateTime.UtcNow;
         public DateTime? CompletedAt { get; set; } // Null means they abandoned it
