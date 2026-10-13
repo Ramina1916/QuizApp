@@ -18,7 +18,7 @@ namespace QuizApp.Models
         [StringLength(50)]
         public string Category { get; set; } = string.Empty;
 
-        public Difficulty Difficulty { get; set; } = Difficulty.Medium;
+        public DifficultyLevel Difficulty { get; set; } = DifficultyLevel.Unspecified;
 
         public int TimeLimitMinutes { get; set; } = 10;
 
@@ -31,7 +31,7 @@ namespace QuizApp.Models
 
         // Navigation property
         [ForeignKey(nameof(CreatedByUserId))]
-        public virtual ApplicationUser? CreatedBy { get; set; }
+        public virtual ApplicationUser? CreatedBy { get; set; } // marked as virtual, because too many kinds of users can create a Quiz
 
         // Relationship: Quiz has many Questions
         public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
