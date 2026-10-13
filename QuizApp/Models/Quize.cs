@@ -5,7 +5,11 @@ namespace QuizApp.Models
 {
     public class Quiz
     {
-        [Key]public int Id { get; set; }
+        /*Represents a quiz that users can take.
+        Acts as the parent container for Questions and tracks overall metadata.*/
+
+
+       [Key]public int Id { get; set; }
 
         [Required]
         [StringLength(200)]
@@ -26,17 +30,17 @@ namespace QuizApp.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Foreign Key to ApplicationUser
+        // The admin who created this quiz, Foreign key to UserApplication
         public string CreatedByUserId { get; set; } = string.Empty;
 
         // Navigation property
         [ForeignKey(nameof(CreatedByUserId))]
         public virtual ApplicationUser? CreatedBy { get; set; } // marked as virtual, because too many kinds of users can create a Quiz
 
-        // Relationship: Quiz has many Questions
+        // A quiz contains many questions
         public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
 
-        // Relationship: Quiz has many Attempts
+        // A quiz can be attempted many times by many users
         public virtual ICollection<QuizAttempt> Attempts { get; set; } = new List<QuizAttempt>();
     }
 }

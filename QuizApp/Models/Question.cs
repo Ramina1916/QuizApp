@@ -5,26 +5,34 @@ namespace QuizApp.Models
 {
     public class Question
     {
-        [Key] public int Id { get; set; }
+        /*
+         Represents an individual question within a specific Quiz.
+         Includes Soft Delete (IsDeleted) so that deleting a question 
+        does not destroy historical QuizAttempt records.
+        */
+        public int Id { get; set; }
 
+        // Foreign key
+        public int QuizId { get; set; }   
         
-        public int QuizId { get; set; } // Foreign Key
+        public Quiz Quiz { get; set; } = null!;
 
         [Required]
         [StringLength(2000)]
-        public string Title { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;    
 
         public QuestionType QuestionType { get; set; } = QuestionType.Unspecified;
 
-        public int DisplayOrder { get; set; }
+        public int DisplayOrder { get; set; } = 1;
 
-        public bool IsDeleted { get; set; } // Soft Delete decision if the quiz modified
+        [Range(1, 100)]
+        public int Points { get; set; } = 1;    
 
+        // Soft Delete properties
+        public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
 
-        public ICollection<AnswerOption> Options { get; set; }
-
-        public Quiz Quiz { get; set; } = null!; // '!' stop warning  
-
+        // The possible answers for this question
+        public ICollection<AnswerOption> Options { get; set; } = new List<AnswerOption>();
     }
 }
