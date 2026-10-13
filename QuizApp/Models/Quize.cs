@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuizApp.Models
@@ -32,10 +33,7 @@ namespace QuizApp.Models
 
         // The admin who created this quiz, Foreign key to UserApplication
         public string CreatedByUserId { get; set; } = string.Empty;
-
-        // Navigation property
-        [ForeignKey(nameof(CreatedByUserId))]
-        public virtual ApplicationUser? CreatedBy { get; set; } // marked as virtual, because too many kinds of users can create a Quiz
+        public IdentityUser? CreatedBy { get; set; }
 
         // A quiz contains many questions
         public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
