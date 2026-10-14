@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyModel;
 using QuizApp.Data;
 using QuizApp.Models;
 using QuizApp.Models.ViewModels;
+using System.Security.Claims;
 
 
-namespace QuizApp.Controllers
-{
+namespace QuizApp.Controllers { 
 
     public class QuizzesController : Controller
     {
@@ -88,6 +89,45 @@ namespace QuizApp.Controllers
 
             if (quiz is null) return NotFound();
             return View(quiz);
+        }
+
+        // Get : Show Empty form
+        [Authorize] // → Ensure only logged-in users can use this page, 
+        // If not logged in, ASP.NET Core automatically redirects to /Identity/Account/Login
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken] // Prevent (CSRF) attacks
+        // Cross-Site Request Forgery: is a web security vulnerability that tricks an authenticated user into performing unintended actions on a web application without their knowledge.
+        public async Task<IActionResult> Create(CreateQuizViewModel model) // functionality → Create a Form → Send by HttpPost, check validation, add to the database
+        {
+            if (!ModelState.IsValid) // if validation failed, show form with error messages
+            {
+                return View(model);
+            }
+            var newQuize = new Quiz
+            {
+                Title = model.Title,
+                Description = model.Description,
+                Category = model.Category,
+                Difficulty = model.Difficulty,
+                TimeLimitMinutes = model.TimeLimitMinutes,
+                Status = QuizStatus.Draft, // start being drafted until the creator publish them
+
+                // Resource_Based Authorization
+                CreatedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Quizzes.Add(newQuize); // Add new Quize to the database
+            await _context.SaveChangesAsync();
+
+            // PRG Pattern(Post-Redirect-Get) : Prevents duplicate submissions if the user refreshes the page.
+            return RedirectToAction(nameof(Details), new { id = newQuize.Id });
         }
 
     }

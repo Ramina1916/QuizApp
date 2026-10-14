@@ -32,7 +32,7 @@ namespace QuizApp.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // The admin who created this quiz, Foreign key to UserApplication
-        public string CreatedByUserId { get; set; } = string.Empty;
+        public string CreatedByUserId { get; set; } = string.Empty; // ⇽  Resource-Based Authorization
         public IdentityUser? CreatedBy { get; set; }
 
         // A quiz contains many questions

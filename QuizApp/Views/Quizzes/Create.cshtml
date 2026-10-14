@@ -1,0 +1,59 @@
+﻿@model QuizApp.Models.ViewModels.CreateQuizViewModel
+
+@{
+    ViewData["Title"] = "Create New Quiz";
+}
+
+<div class="page-container">
+    <h1>Create a New Quiz</h1>
+    <p class="text-muted">Fill in the details below. You can add questions on the next screen.</p>
+
+    <form asp-action="Create" method="post">
+
+        <div class="form-group">
+            <label asp-for="Title"></label>
+            <input asp-for="Title" class="form-input" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description"></label>
+            <textarea asp-for="Description" class="form-input" rows="3"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div class="admin-form-grid">
+            <div class="form-group">
+                <label asp-for="Category"></label>
+                <input asp-for="Category" class="form-input" placeholder="e.g., Programming, History" />
+                <span asp-validation-for="Category" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Difficulty"></label>
+                <select asp-for="Difficulty" class="form-input" asp-items="Html.GetEnumSelectList<DifficultyLevel>()">
+                    <option value="">Select Difficulty</option>
+                </select>
+                <span asp-validation-for="Difficulty" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="TimeLimitMinutes"></label>
+                <input asp-for="TimeLimitMinutes" type="number" class="form-input" />
+                <span asp-validation-for="TimeLimitMinutes" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary btn-lg">Create Quiz</button>
+            <a asp-action="Index" class="btn btn-secondary btn-lg">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<!-- This section loads the client-side validation scripts -->
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
