@@ -1,6 +1,44 @@
 ﻿@model QuizApp.Models.ViewModels.QuizDetailsViewModel
 
-<h1>@Model.Title</h1>
 @{
-   
+    ViewData["Title"] = Model.Title;
 }
+
+<div class="page-container">
+    <a asp-controller="Quizzes" asp-action="Index">← Back to quizzes</a>
+
+    <div class="quiz-detail-hero">
+        <h1>@Model.Title</h1>
+        <p>
+            @(Model.Description ?? "No description provided.")
+        </p>
+        <div class="quiz-detail-stats">
+            <span>@Model.QuestionCount questions</span>
+            <span>@Model.TimeLimitMinutes minutes</span>
+            <span>@Model.Difficulty</span>
+        </div>
+    </div>
+
+    <h2>Questions</h2>
+
+    @if (!Model.Questions.Any())
+    {
+        <p>This quiz has no questions yet.</p>
+    }
+    else
+    {
+        @foreach (var question in Model.Questions)
+        {
+            <div class="question-preview">
+                <span>@question.Text</span>
+                <span>@question.QuestionType</span>
+                <span>@question.Points pts</span>
+            </div>
+        }
+    }
+
+    <a class="btn btn-primary"
+       asp-controller="Quizzes" asp-action="Take" asp-route-id="@Model.Id">
+        Start Quiz
+    </a>
+</div>

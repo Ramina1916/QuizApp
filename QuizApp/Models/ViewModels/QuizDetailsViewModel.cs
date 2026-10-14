@@ -9,6 +9,9 @@
         public DifficultyLevel Difficulty { set; get; }
         public int TimeLimitMinutes { get; set; }
         public int QuestionCount {  get; set; }
-       
+
+        // A list of Questions
+        public List<QuestionListItemViewModel> Questions { get; set; } = new();
+
     }
 }
