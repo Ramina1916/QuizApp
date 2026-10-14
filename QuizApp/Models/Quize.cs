@@ -25,7 +25,7 @@ namespace QuizApp.Models
 
         public DifficultyLevel Difficulty { get; set; } = DifficultyLevel.Unspecified;
 
-        public int TimeLimitMinutes { get; set; } = 10;
+        public int TimeLimitMinutes { get; set; }
 
         public QuizStatus Status { get; set; } = QuizStatus.Draft;
 

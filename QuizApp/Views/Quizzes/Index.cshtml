@@ -1,0 +1,29 @@
+﻿@model IEnumerable<QuizApp.Models.ViewModels.QuizListItemViewModel>
+
+<h1>Browse Quizzes</h1>
+
+@if (!Model.Any())
+{
+    <p>No quizzes yet — check back soon.</p>
+}
+else
+{
+    <div class="quiz-grid">
+        @foreach (var quiz in Model) // (Model is a property) / it loop over our IEnumerable
+        {
+            <div class="quiz-card">
+                <h3>@quiz.Title</h3>
+                @if (quiz.Description is not null){
+                    <p>@quiz.Description</p>
+                }
+                else
+                {
+                    <p>No description</p>
+                }
+                <span>@quiz.QuestionCount questions</span>
+                <a asp-controller="Quizzes" asp-action="Details"
+                   asp-route-id="@quiz.Id">Open →</a>
+            </div>
+        }
+    </div>
+}
