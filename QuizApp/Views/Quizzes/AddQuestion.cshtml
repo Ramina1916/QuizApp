@@ -1,0 +1,66 @@
+﻿@model QuizApp.Models.ViewModels.CreateQuestionViewModel
+
+@{
+    ViewData["Title"] = "Add Question";
+}
+
+<div class="page-container">
+    <a asp-controller="Quizzes" asp-action="Details" asp-route-id="@Model.QuizId" class="btn btn-ghost btn-sm" style="margin-bottom: 1rem;">
+        ← Back to Quiz Details
+    </a>
+
+    <h1>Add a New Question</h1>
+    <p class="text-muted">Define the question, its point value, and the possible answers.</p>
+
+    <form asp-action="AddQuestion" method="post">
+        <!-- Hidden field to maintain the parent Quiz relationship -->
+        <input type="hidden" asp-for="QuizId" />
+
+        <div class="form-group">
+            <label asp-for="Text">Question Text</label>
+            <textarea asp-for="Text" class="form-input" rows="3" placeholder="e.g., What is the capital of France?"></textarea>
+            <span asp-validation-for="Text" class="text-danger"></span>
+        </div>
+
+        <div class="admin-form-grid">
+            <div class="form-group">
+                <label asp-for="QuestionType">Question Type</label>
+                <select asp-for="QuestionType" class="form-input" asp-items="Html.GetEnumSelectList<QuizApp.Models.QuestionType>()">
+                    <option value="">-- Select Type --</option>
+                </select>
+                <span asp-validation-for="QuestionType" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Points">Points</label>
+                <input asp-for="Points" type="number" class="form-input" min="1" max="100" />
+                <span asp-validation-for="Points" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="OptionsText">Answer Options</label>
+            <textarea asp-for="OptionsText" class="form-input" rows="5" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+            <small class="text-muted">Enter one option per line.</small>
+            <span asp-validation-for="OptionsText" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="CorrectAnswer">Correct Answer</label>
+            <input asp-for="CorrectAnswer" class="form-input" placeholder="Must exactly match one of the options above" />
+            <small class="text-muted">Type the correct answer exactly as it appears in the options list (case-insensitive).</small>
+            <span asp-validation-for="CorrectAnswer" class="text-danger"></span>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary btn-lg">Save Question</button>
+            <a asp-controller="Quizzes" asp-action="Details" asp-route-id="@Model.QuizId" class="btn btn-secondary btn-lg">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
