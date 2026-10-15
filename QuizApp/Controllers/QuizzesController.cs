@@ -187,13 +187,13 @@ namespace QuizApp.Controllers
 
             // trace the optionstext then Convert to list
             var optionsList = model.OptionsText
-                .Split('\n', StringSplitOptions.RemoveEmptyEntries) // ignore both upper and lower case
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.Trim())
                 .Where(txt => txt.Length > 0)
                 .Select(txt => new AnswerOption
                 {
                     Text = txt,
-                    IsCorrect = model.CorrectAnswer.Trim().Equals(txt, StringComparison.OrdinalIgnoreCase)
+                    IsCorrect = model.CorrectAnswer.Trim().Equals(txt, StringComparison.OrdinalIgnoreCase) // ignore both upper and lower case letters
                     // ⇡ check whether a correct answer is equal to inputted texts 
                 })
                 .ToList();
