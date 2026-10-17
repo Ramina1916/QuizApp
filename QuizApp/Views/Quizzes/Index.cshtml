@@ -1,16 +1,25 @@
 ﻿@model IEnumerable<QuizApp.Models.ViewModels.QuizListItemViewModel>
 
 @{
-    ViewData["Title"] = "Browse Quizzes";
+    ViewData["Title"] = "Explore Quizzes";
 }
 
-<div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h1 class="fw-bold mb-1">Explore Quizzes</h1>
-            <p class="text-muted mb-0">Test your knowledge across various topics.</p>
-        </div>
-        <a asp-action="Create" class="btn btn-primary">+ Create Quiz</a>
+<!-- 1. HERO BANNER -->
+<div class="hero-banner text-white text-center py-5 mb-5 rounded-4" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">Test Your Knowledge</h1>
+        <p class="lead mb-4">Explore hundreds of quizzes created by our community, or build your own.</p>
+        <a asp-action="Create" class="btn btn-light btn-lg px-5 fw-bold" style="color: #4f46e5;">Create Your Own Quiz</a>
+    </div>
+</div>
+
+<div class="container">
+    <!-- 2. INTERACTIVE CATEGORY FILTER -->
+    <div class="d-flex justify-content-center gap-2 mb-5 flex-wrap">
+        <button class="btn btn-outline-primary active" onclick="filterQuizzes('all', this)">All Categories</button>
+        <button class="btn btn-outline-primary" onclick="filterQuizzes('programming', this)">Programming</button>
+        <button class="btn btn-outline-primary" onclick="filterQuizzes('history', this)">History</button>
+        <button class="btn btn-outline-primary" onclick="filterQuizzes('science', this)">Science</button>
     </div>
 
     @if (!Model.Any())
@@ -19,10 +28,11 @@
     }
     else
     {
-        <div class="row g-4">
-            @foreach (var quiz in Model) // Model is a property
+        <div class="row g-4" id="quizGrid">
+            @foreach (var quiz in Model)
             {
-                <div class="col-md-6 col-lg-4">
+                <!-- Added data-category for the JS filter -->
+                <div class="col-md-6 col-lg-4 quiz-card-wrapper" data-category="@quiz.Category.ToLower()">
                     <div class="quiz-card h-100 d-flex flex-column">
                         <div class="mb-3">
                             <span class="badge bg-primary bg-opacity-10 text-primary">@quiz.Category</span>
@@ -34,7 +44,7 @@
 
                         <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
                             <small class="text-muted">
-                                <i class="bi bi-clock"></i> @quiz.TimeLimitMinutes min &bull; @quiz.QuestionCount Qs
+                                @quiz.TimeLimitMinutes min &bull; @quiz.QuestionCount Qs
                             </small>
                             <a asp-action="Details" asp-route-id="@quiz.Id" class="btn btn-sm btn-outline-primary">View</a>
                         </div>
@@ -44,3 +54,32 @@
         </div>
     }
 </div>
+
+<!-- 3. JAVASCRIPT FOR INTERACTIVITY -->
+<script>
+    function filterQuizzes(category, btnElement) {
+        // 1. Update active button styling
+        document.querySelectorAll('.btn-outline-primary').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        // 2. Filter the cards
+        const cards = document.querySelectorAll('.quiz-card-wrapper');
+        cards.forEach(card => {
+            if (category === 'all' || card.dataset.category === category) {
+                card.style.display = 'block';
+                // Add a tiny fade-in animation
+                card.style.opacity = '0';
+                setTimeout(() => card.style.opacity = '1', 50);
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+</script>
+
+<style>
+    /* Smooth transition for the filter */
+    .quiz-card-wrapper {
+        transition: opacity 0.3s ease-in-out;
+    }
+</style>
