@@ -35,6 +35,10 @@ namespace QuizApp.Models
         public string CreatedByUserId { get; set; } = string.Empty; // ⇽  Resource-Based Authorization
         public IdentityUser? CreatedBy { get; set; }
 
+        // Soft delete prperties
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+
         // A quiz contains many questions
         public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
 

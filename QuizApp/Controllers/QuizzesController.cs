@@ -412,5 +412,6 @@ namespace QuizApp.Controllers
 
             return View(myQuizzes);
         }
+        
     }
 }
