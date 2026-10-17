@@ -1,0 +1,40 @@
+﻿@model IEnumerable<QuizApp.Models.ViewModels.AttemptHistoryViewModel>
+
+@{
+    ViewData["Title"] = "My Quiz History";
+}
+
+<div class="page-container">
+    <h1>My Quiz History</h1>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">You haven't taken any quizzes yet. <a asp-action="Index">Browse Quizzes</a></p>
+    }
+    else
+    {
+        <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+            <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                    <th style="padding: 0.75rem;">Quiz Title</th>
+                    <th style="padding: 0.75rem;">Score</th>
+                    <th style="padding: 0.75rem;">Date</th>
+                    <th style="padding: 0.75rem;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 0.75rem;">@item.QuizTitle</td>
+                        <td style="padding: 0.75rem;">@item.Score / @item.MaxScore</td>
+                        <td style="padding: 0.75rem;">@item.CompletedAt.ToString("MMM dd, yyyy")</td>
+                        <td style="padding: 0.75rem;">
+                            <a asp-action="Results" asp-route-id="@item.AttemptId" class="btn btn-sm btn-primary">View Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

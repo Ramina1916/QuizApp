@@ -357,5 +357,60 @@ namespace QuizApp.Controllers
 
             return View(attempt);
         }
+
+        
+
+        /* Display a history of Quiz taken */
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> History()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // We join Attempts with Quizzes to get the Title.
+            // SECURITY: We filter by UserId so users ONLY see their own history.
+            var history = await _context.QuizAttempts
+                .AsNoTracking()
+                .Where(a => a.UserId == userId)
+                .Select(a => new AttemptHistoryViewModel
+                {
+                    AttemptId = a.Id,
+                    QuizTitle = a.Quiz!.Title, // EF Core translates this to a SQL JOIN automatically!
+                    Score = a.Score,
+                    MaxScore = a.MaxScore,
+                    CompletedAt = a.CompletedAt!.Value
+                })
+                .OrderByDescending(a => a.CompletedAt)
+                .ToListAsync();
+
+            return View(history);
+        }
+
+
+
+        /* Display creator dashboard */
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> MyQuizzes()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // SECURITY: We ONLY return quizzes created by the currently logged-in user.
+            var myQuizzes = await _context.Quizzes
+                .AsNoTracking()
+                .Where(q => q.CreatedByUserId == userId)
+                .OrderByDescending(q => q.CreatedAt)
+                .Select(q => new MyQuizViewModel
+                {
+                    Id = q.Id,
+                    Title = q.Title,
+                    Status = q.Status,
+                    QuestionCount = q.Questions.Count(qq => !qq.IsDeleted),
+                    CreatedAt = q.CreatedAt
+                })
+                .ToListAsync();
+
+            return View(myQuizzes);
+        }
     }
 }

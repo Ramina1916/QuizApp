@@ -1,0 +1,41 @@
+﻿@model IEnumerable<QuizApp.Models.ViewModels.MyQuizViewModel>
+
+@{
+    ViewData["Title"] = "My Quizzes";
+}
+
+<div class="page-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h1>My Quizzes</h1>
+        <a asp-action="Create" class="btn btn-primary">+ Create New Quiz</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">You haven't created any quizzes yet.</p>
+    }
+    else
+    {
+        <div class="quiz-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            @foreach (var quiz in Model)
+            {
+                <div class="quiz-card" style="border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 8px; background: #fff;">
+                    <h3>@quiz.Title</h3>
+                    <p class="text-muted small">@quiz.QuestionCount Questions</p>
+
+                    <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <!-- Status Badge -->
+                        <span style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem;
+                            background: @(quiz.Status == QuizApp.Models.QuizStatus.Active ? "#dcfce7" : "#f1f5f9");
+                            color: @(quiz.Status == QuizApp.Models.QuizStatus.Active ? "#166534" : "#475569");">
+                            @quiz.Status
+                        </span>
+
+                        <!-- Manage Button -->
+                        <a asp-action="Details" asp-route-id="@quiz.Id" class="btn btn-sm btn-secondary">Manage</a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
