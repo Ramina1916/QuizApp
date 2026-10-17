@@ -15,6 +15,7 @@
         <div class="quiz-detail-stats">
             <span>@Model.QuestionCount questions</span>
             <span>@Model.TimeLimitMinutes minutes</span>
+            <a href="e:\programming\backend\c# practice\quizapp\quizapp\views\quizzes\details.cshtml">e:\programming\backend\c# practice\quizapp\quizapp\views\quizzes\details.cshtml</a>
             <span>@Model.Difficulty</span>
         </div>
     </div>
@@ -41,5 +42,13 @@
        asp-controller="Quizzes" asp-action="Take" asp-route-id="@Model.Id">
         Start Quiz
     </a>
-    <a asp-action="AddQuestion" asp-route-quizId="@Model.Id">+ Add Question</a>
+    <!-- Only show this button if the logged-in user created the quiz -->
+    @if (Model.IsOwner)
+    {
+        <a asp-action="AddQuestion" asp-route-quizId="@Model.Id" class="btn btn-secondary">
+            + Add Question
+        </a>
+
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit Details</a>
+    }
 </div>

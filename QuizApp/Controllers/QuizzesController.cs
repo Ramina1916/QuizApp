@@ -8,6 +8,7 @@ using QuizApp.Data;
 using QuizApp.Models;
 using QuizApp.Models.ViewModels;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Security.Claims;
 
 
@@ -81,6 +82,7 @@ namespace QuizApp.Controllers
                     Difficulty = q.Difficulty,
                     TimeLimitMinutes = q.TimeLimitMinutes,
                     QuestionCount = q.Questions.Count(qq => !qq.IsDeleted), // return the count of questions not deleted
+                    IsOwner =(q.CreatedByUserId == userId), // Compare the quiz creator to the logged-in user
                     Questions = q.Questions
                         .Where(qq => !qq.IsDeleted) // Soft delete
                         .OrderBy(qq => qq.DisplayOrder) // Ensure questions appear in the correct order
@@ -226,7 +228,7 @@ namespace QuizApp.Controllers
         /* Define Take method, that load the Quiz page to take */
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> Take(int id) 
+        public async Task<IActionResult> Take(int id)
         {
 
             var quiz = await _context.Quizzes
@@ -290,30 +292,57 @@ namespace QuizApp.Controllers
             {
                 if (truth.TryGetValue(posted.QuestionId, out var q))
                 {
-                    // Find the option they picked WITHIN this specific question's options
-                    var chosen = q.Options.FirstOrDefault(o => o.Id == posted.SelectedOptionId);
+                    bool isCorrect = false;
+                    int pointsEarned = 0;
+                    string snapshotText = null!; // This will hold either the option text OR the typed text
 
-                    bool isCorrect = chosen != null && chosen.IsCorrect;
-                    int pointsEarned = isCorrect ? q.Points : 0;
+                    if (q.QuestionType == QuestionType.ShortAnswer)
+                    {
+                        // SHORT ANSWER LOGIC:
+                        // Get all correct options for this question, cleaned up (lowercase, trimmed)
+                        var correctAnswers = q.Options
+                            .Where(o => o.IsCorrect)
+                            .Select(o => o.Text.Trim().ToLower())
+                            .ToList();
 
+                        // Clean up the user's typed answer
+                        var userAnswerClean = posted.UserAnswer?.Trim().ToLower() ?? "";
+
+                        // Check if the user's answer matches ANY of the correct answers
+                        isCorrect = correctAnswers.Contains(userAnswerClean);
+                        snapshotText = posted.UserAnswer!; // Snapshot is what they typed
+                    }
+                    else
+                    {
+                        // MULTIPLE CHOICE / TRUE-FALSE LOGIC:
+                        var chosen = q.Options.FirstOrDefault(o => o.Id == posted.SelectedOptionId);
+
+                        if (chosen != null)
+                        {
+                            isCorrect = chosen.IsCorrect;
+                            snapshotText = chosen.Text; // Snapshot is the option they clicked
+                        }
+                    }
+
+                    // Award points if correct
                     if (isCorrect)
                     {
+                        pointsEarned = q.Points;
                         earnedScore += pointsEarned;
                     }
 
-                    // Build the Snapshot record
+                    // Build the snapshot record
                     attemptAnswers.Add(new AttemptAnswer
                     {
-                        AttemptId = 0, // EF Core will fill this automatically
+                        AttemptId = 0,
                         QuestionId = posted.QuestionId,
-                        QuestionTextSnapshot = q.Text,                  // From DB truth
-                        SelectedOptionTextSnapshot = chosen?.Text,      // From DB truth (null if skipped)
-                        UserAnswer = posted.UserAnswer,                 // From browser (their typed words)
+                        QuestionTextSnapshot = q.Text,
+                        SelectedOptionTextSnapshot = snapshotText, // Works for BOTH question types now!
+                        UserAnswer = posted.UserAnswer,
                         IsCorrect = isCorrect,
                         PointsEarned = pointsEarned
                     });
                 }
-                // If TryGetValue is false, the browser sent a fake QuestionId. We safely ignore it.
             }
 
             // Save the attempt and all its answers in ONE transaction
@@ -358,7 +387,7 @@ namespace QuizApp.Controllers
             return View(attempt);
         }
 
-        
+
 
         /* Display a history of Quiz taken */
         [HttpGet]
@@ -414,7 +443,7 @@ namespace QuizApp.Controllers
         }
 
 
- 
+
 
         /* PUBLISH A DRAFT QUIZ*/
         [HttpPost] // JUNIOR TIP: Never use [HttpGet] to change data! If a web crawler visits a GET delete/publish link, it accidentally changes your database. Always use POST for state changes.
@@ -468,6 +497,69 @@ namespace QuizApp.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(MyQuizzes));
+        }
+
+
+
+        // GET: Show the Edit Form
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // SECURITY: Load the quiz AND verify ownership in one go.
+            var quiz = await _context.Quizzes
+                .AsNoTracking() // Read-only for the form display
+                .FirstOrDefaultAsync(q => q.Id == id && q.CreatedByUserId == userId);
+
+            if (quiz is null) return NotFound(); // Blocks non-owners safely
+
+            // Map Entity to ViewModel
+            var model = new EditQuizViewModel
+            {
+                Id = quiz.Id,
+                Title = quiz.Title,
+                Description = quiz.Description,
+                Category = quiz.Category,
+                Difficulty = quiz.Difficulty,
+                TimeLimitMinutes = quiz.TimeLimitMinutes
+            };
+
+            return View(model);
+        }
+
+        
+
+        // POST: Save the Edits
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EditQuizViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // SECURITY: Load the actual entity from DB to update it. 
+            // We DO NOT use AsNoTracking here because we intend to SaveChanges.
+            var quiz = await _context.Quizzes
+                .FirstOrDefaultAsync(q => q.Id == model.Id && q.CreatedByUserId == userId);
+
+            if (quiz is null) return NotFound();
+
+            // UPDATE: Only update the properties the user is allowed to change.
+            // Notice we DO NOT update Status, CreatedAt, or CreatedByUserId here.
+            quiz.Title = model.Title;
+            quiz.Description = model.Description;
+            quiz.Category = model.Category;
+            quiz.Difficulty = model.Difficulty;
+            quiz.TimeLimitMinutes = model.TimeLimitMinutes;
+
+            await _context.SaveChangesAsync();
+
+            // PRG Pattern: Redirect to Details to see the changes
+            return RedirectToAction(nameof(Details), new { id = quiz.Id });
         }
     }
 }

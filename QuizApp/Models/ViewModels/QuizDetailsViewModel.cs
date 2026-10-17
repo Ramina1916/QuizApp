@@ -13,5 +13,8 @@
         // A list of Questions
         public List<QuestionListItemViewModel> Questions { get; set; } = new();
 
+        // Tells the View if the current user is allowed to manage this quiz
+        public bool IsOwner { get; set; }
+
     }
 }
