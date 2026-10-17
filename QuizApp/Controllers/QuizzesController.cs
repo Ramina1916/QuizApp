@@ -238,6 +238,7 @@ namespace QuizApp.Controllers
                 {
                     QuizId = q.Id,
                     Title = q.Title,
+                    TimeLimitMinutes = q.TimeLimitMinutes,
                     Answers = q.Questions
                      .Where(qq => !qq.IsDeleted)
                      .OrderBy(qq => qq.DisplayOrder)
@@ -254,7 +255,7 @@ namespace QuizApp.Controllers
                          }).ToList()
                      }).ToList()
                 })
-                 .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync();
 
             if (quiz is null) return NotFound();
 

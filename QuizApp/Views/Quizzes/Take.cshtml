@@ -1,53 +1,96 @@
 ﻿@model QuizApp.Models.ViewModels.TakeQuizViewModel
 
 @{
-    ViewData["Title"] = "Take Quiz: " + Model.Title;
+    ViewData["Title"] = "Take Quiz";
 }
 
-<div class="page-container">
-    <h1>@Model.Title</h1>
-    <p class="text-muted">Answer all questions to the best of your ability.</p>
+<!-- STICKY TIMER HEADER -->
+<div class="timer-sticky">
+    <div>
+        <h4 class="mb-0">@Model.Title</h4>
+        <small class="text-muted">Answer carefully. The quiz auto-submits when time runs out.</small>
+    </div>
+    <div class="timer-display" id="countdown">
+        Loading...
+    </div>
+</div>
 
-    <form asp-action="Submit" method="post">
-        <!-- Hidden field for QuizId -->
+<div class="container py-5">
+    <form asp-action="Submit" method="post" id="quizForm">
         <input type="hidden" name="QuizId" value="@Model.QuizId" />
 
         @for (int i = 0; i < Model.Answers.Count; i++)
         {
-            <div class="question-card" style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <h3>@(i + 1). @Model.Answers[i].Text</h3>
-                <p class="text-muted small">Type: @Model.Answers[i].QuestionType</p>
+            <div class="question-block">
+                <div class="d-flex justify-content-between mb-3">
+                    <h5 class="fw-bold">Question @(i + 1)</h5>
+                    <span class="badge bg-light text-dark border">@Model.Answers[i].QuestionType</span>
+                </div>
 
-                <!-- Hidden field for QuestionId -->
+                <p class="fs-5 mb-4">@Model.Answers[i].Text</p>
+
                 <input type="hidden" name="Answers[@i].QuestionId" value="@Model.Answers[i].QuestionId" />
 
                 @if (Model.Answers[i].QuestionType == QuizApp.Models.QuestionType.ShortAnswer)
                 {
-                    <div class="form-group">
-                        <label>Your Answer:</label>
-                        <!-- Manual name attribute matching POST model -->
-                        <input type="text" name="Answers[@i].UserAnswer" class="form-input" style="width: 100%; margin-top: 0.5rem;" placeholder="Type your answer here..." />
-                    </div>
+                    <input type="text" name="Answers[@i].UserAnswer" class="form-control form-control-lg" placeholder="Type your answer here..." />
                 }
                 else
                 {
-                    <!-- Radio buttons for MultipleChoice/TrueFalse -->
-                    @foreach (var option in Model.Answers[i].Options)
-                    {
-                        <div class="form-check" style="margin-top: 0.5rem;">
-                            <!-- Manual name attribute matching POST model -->
-                            <input type="radio"
-                                   name="Answers[@i].SelectedOptionId"
-                                   value="@option.Id"
-                                   id="opt_@option.Id"
-                                   class="form-check-input" />
-                            <label for="opt_@option.Id" class="form-check-label">@option.Text</label>
-                        </div>
-                    }
+                    <div class="d-grid gap-2">
+                        @foreach (var option in Model.Answers[i].Options)
+                        {
+                            <div class="form-check p-3 border rounded hover-bg-light">
+                                <input class="form-check-input me-2" type="radio"
+                                       name="Answers[@i].SelectedOptionId"
+                                       value="@option.Id"
+                                       id="opt_@option.Id" />
+                                <label class="form-check-label w-100" for="opt_@option.Id">
+                                    @option.Text
+                                </label>
+                            </div>
+                        }
+                    </div>
                 }
             </div>
         }
 
-        <button type="submit" class="btn btn-primary btn-lg" style="margin-top: 1rem;">Submit Quiz</button>
+        <div class="d-grid gap-2 col-6 mx-auto mt-5">
+            <button type="submit" class="btn btn-primary btn-lg">Submit Quiz</button>
+        </div>
     </form>
 </div>
+
+<!-- JAVASCRIPT TIMER LOGIC -->
+<script>
+    // 1. Get time from Model (converted to seconds)
+    let timeLeft = @Model.TimeLimitMinutes * 60;
+    const display = document.getElementById('countdown');
+    const form = document.getElementById('quizForm');
+
+    function updateTimer() {
+        let minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+
+        // Format: 09:05
+        display.innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+        // Visual warning when < 1 minute
+        if (timeLeft < 60) {
+            display.classList.add('urgent');
+        }
+
+        // Auto-submit when time is up
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            alert("Time is up! Submitting your quiz...");
+            form.submit();
+        }
+
+        timeLeft--;
+    }
+
+    // Run immediately, then every second
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+</script>
