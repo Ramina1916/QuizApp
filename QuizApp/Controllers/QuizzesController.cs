@@ -37,7 +37,7 @@ namespace QuizApp.Controllers
         public async Task<IActionResult> Index()
         {
             var quizzes = await _context.Quizzes
-                .Where(q => q.Status == QuizStatus.Active)
+                .Where(q => q.Status == QuizStatus.Active && !q.IsDeleted)
                 .OrderByDescending(q => q.CreatedAt)
                 .Select(q => new QuizListItemViewModel // select is a projection operator, so filters should excute before it
                 {
@@ -412,6 +412,62 @@ namespace QuizApp.Controllers
 
             return View(myQuizzes);
         }
-        
+
+
+ 
+
+        /* PUBLISH A DRAFT QUIZ*/
+        [HttpPost] // JUNIOR TIP: Never use [HttpGet] to change data! If a web crawler visits a GET delete/publish link, it accidentally changes your database. Always use POST for state changes.
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Publish(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // SECURITY: Find the quiz AND verify ownership in one query.
+            var quiz = await _context.Quizzes
+                .FirstOrDefaultAsync(q => q.Id == id && q.CreatedByUserId == userId);
+
+            if (quiz is null) return NotFound();
+
+            // LOGIC: Only publish if it's actually a draft.
+            if (quiz.Status == QuizStatus.Draft)
+            {
+                quiz.Status = QuizStatus.Active;
+                await _context.SaveChangesAsync();
+            }
+
+            // PRG Pattern: Redirect back to the management page to prevent double-submissions.
+            return RedirectToAction(nameof(MyQuizzes));
+        }
+
+
+
+
+        /*SOFT DELETE A QUIZ*/
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var quiz = await _context.Quizzes
+                .FirstOrDefaultAsync(q => q.Id == id && q.CreatedByUserId == userId);
+
+            if (quiz is null) return NotFound();
+
+            // WHY SOFT DELETE? 
+            // If we hard delete (remove the row), users who already took this quiz will have 
+            // broken history records. Soft delete just hides it from the public list.
+            quiz.IsDeleted = true;
+            quiz.DeletedAt = DateTime.UtcNow;
+
+            // JUNIOR TIP: We don't need to change the Status to Draft. 
+            // The global query filter (!q.IsDeleted) will automatically hide it from the public Index page.
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(MyQuizzes));
+        }
     }
 }

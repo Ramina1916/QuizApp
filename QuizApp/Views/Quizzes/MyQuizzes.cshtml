@@ -33,6 +33,29 @@
 
                         <!-- Manage Button -->
                         <a asp-action="Details" asp-route-id="@quiz.Id" class="btn btn-sm btn-secondary">Manage</a>
+
+
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+
+                            <!-- PUBLISH BUTTON (Only show if it's a Draft) -->
+                            @if (quiz.Status == QuizApp.Models.QuizStatus.Draft)
+                            {
+                                <form asp-action="Publish" asp-route-id="@quiz.Id" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-success">Publish</button>
+                                </form>
+                            }
+
+                            <!-- DELETE BUTTON -->
+                            <form asp-action="Delete" asp-route-id="@quiz.Id" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <!-- JUNIOR TIP: Always ask for confirmation before destructive actions! -->
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Are you sure you want to delete this quiz? Users who already took it will still see their history, but it will be hidden from the public.');">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             }
