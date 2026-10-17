@@ -1,0 +1,56 @@
+﻿@model QuizApp.Models.QuizAttempt
+
+@{
+    ViewData["Title"] = "Quiz Results";
+}
+
+<div class="page-container">
+    <h1>Quiz Results</h1>
+
+    <!-- Score Summary Card -->
+    <div class="score-card" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+        <h2>Your Score: @Model.Score / @Model.MaxScore</h2>
+        <p class="text-muted">Completed on: @Model.CompletedAt?.ToString("g")</p>
+    </div>
+
+    <h3>Question Breakdown</h3>
+
+    @if (Model.Answers == null || !Model.Answers.Any())
+    {
+        <p>No answers were recorded for this attempt.</p>
+    }
+    else
+    {
+        @foreach (var answer in Model.Answers.OrderBy(a => a.QuestionId))
+        {
+            <!-- Dynamic border color: Green if correct, Red if incorrect -->
+            <div class="question-result" style="margin-bottom: 1.5rem; padding: 1rem; border-left: 4px solid @(answer.IsCorrect ? "#22c55e" : "#ef4444"); background: #f8fafc; border-radius: 4px;">
+                <h4>@answer.QuestionTextSnapshot</h4>
+
+                @if (!string.IsNullOrEmpty(answer.SelectedOptionTextSnapshot))
+                {
+                    <p><strong>Your Answer:</strong> @answer.SelectedOptionTextSnapshot</p>
+                }
+                else if (!string.IsNullOrEmpty(answer.UserAnswer))
+                {
+                    <p><strong>Your Answer:</strong> @answer.UserAnswer</p>
+                }
+                else
+                {
+                    <p><strong>Your Answer:</strong> <span class="text-muted">Skipped</span></p>
+                }
+
+                <p style="margin-top: 0.5rem;">
+                    <strong>Status:</strong>
+                    <span style="color: @(answer.IsCorrect ? "green" : "red"); font-weight: bold;">
+                        @(answer.IsCorrect ? "Correct" : "Incorrect")
+                    </span>
+                    <br />
+                    <strong>Points Earned:</strong> @answer.PointsEarned
+                </p>
+            </div>
+        }
+    }
+
+    <a asp-controller="Quizzes" asp-action="Index" class="btn btn-primary" style="margin-top: 1rem;">Back to Quizzes</a>
+</div>

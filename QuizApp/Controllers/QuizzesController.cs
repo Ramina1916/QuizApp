@@ -337,8 +337,25 @@ namespace QuizApp.Controllers
             return RedirectToAction("Results", new { id = attempt.Id });
         }
 
+        /* Get the Result */
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Results(int id)
+        {
+            // SECURITY: Get the current user's ID
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            // Load the attempt AND its snapshot answers.
+            // SECURITY CHECK: We add "&& a.UserId == userId" so users can ONLY see their own results.
+            var attempt = await _context.QuizAttempts
+                .AsNoTracking()
+                .Include(a => a.Answers)
+                .Where(a => a.Id == id && a.UserId == userId)
+                .FirstOrDefaultAsync();
 
+            if (attempt is null) return NotFound();
 
+            return View(attempt);
+        }
     }
 }
