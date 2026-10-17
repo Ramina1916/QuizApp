@@ -1,0 +1,53 @@
+﻿@model QuizApp.Models.ViewModels.TakeQuizViewModel
+
+@{
+    ViewData["Title"] = "Take Quiz: " + Model.Title;
+}
+
+<div class="page-container">
+    <h1>@Model.Title</h1>
+    <p class="text-muted">Answer all questions to the best of your ability.</p>
+
+    <form asp-action="Submit" method="post">
+        <!-- Hidden field for QuizId -->
+        <input type="hidden" name="QuizId" value="@Model.QuizId" />
+
+        @for (int i = 0; i < Model.Answers.Count; i++)
+        {
+            <div class="question-card" style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h3>@(i + 1). @Model.Answers[i].Text</h3>
+                <p class="text-muted small">Type: @Model.Answers[i].QuestionType</p>
+
+                <!-- Hidden field for QuestionId -->
+                <input type="hidden" name="Answers[@i].QuestionId" value="@Model.Answers[i].QuestionId" />
+
+                @if (Model.Answers[i].QuestionType == QuizApp.Models.QuestionType.ShortAnswer)
+                {
+                    <div class="form-group">
+                        <label>Your Answer:</label>
+                        <!-- Manual name attribute matching POST model -->
+                        <input type="text" name="Answers[@i].UserAnswer" class="form-input" style="width: 100%; margin-top: 0.5rem;" placeholder="Type your answer here..." />
+                    </div>
+                }
+                else
+                {
+                    <!-- Radio buttons for MultipleChoice/TrueFalse -->
+                    @foreach (var option in Model.Answers[i].Options)
+                    {
+                        <div class="form-check" style="margin-top: 0.5rem;">
+                            <!-- Manual name attribute matching POST model -->
+                            <input type="radio"
+                                   name="Answers[@i].SelectedOptionId"
+                                   value="@option.Id"
+                                   id="opt_@option.Id"
+                                   class="form-check-input" />
+                            <label for="opt_@option.Id" class="form-check-label">@option.Text</label>
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        <button type="submit" class="btn btn-primary btn-lg" style="margin-top: 1rem;">Submit Quiz</button>
+    </form>
+</div>

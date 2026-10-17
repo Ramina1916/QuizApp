@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Humanizer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyModel;
@@ -70,7 +71,7 @@ namespace QuizApp.Controllers
             // We build the parent ViewModel, and inside it, we build a List of child ViewModels to prevent sensitive fields.
             var quiz = await _context.Quizzes
                 .AsNoTracking() // Skip change tracker setting
-                .Where(q => q.Id == id && ( q.CreatedByUserId == userId || q.Status == QuizStatus.Active))   // Display only Active Quizzes
+                .Where(q => q.Id == id && (q.CreatedByUserId == userId || q.Status == QuizStatus.Active))   // Display only Active Quizzes
                 .Select(q => new QuizDetailsViewModel
                 {
                     Id = q.Id,
@@ -81,7 +82,7 @@ namespace QuizApp.Controllers
                     TimeLimitMinutes = q.TimeLimitMinutes,
                     QuestionCount = q.Questions.Count(qq => !qq.IsDeleted), // return the count of questions not deleted
                     Questions = q.Questions
-                        .Where(qq  => !qq.IsDeleted) // Soft delete
+                        .Where(qq => !qq.IsDeleted) // Soft delete
                         .OrderBy(qq => qq.DisplayOrder) // Ensure questions appear in the correct order
                         .Select(qq => new QuestionListItemViewModel
                         {
@@ -221,5 +222,123 @@ namespace QuizApp.Controllers
             // (PRG)
             return RedirectToAction(nameof(Details), new { id = model.QuizId }); // redirect to the quize detail
         }
+
+        /* Define Take method, that load the Quiz page to take */
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Take(int id) 
+        {
+
+            var quiz = await _context.Quizzes
+                .AsNoTracking()
+                .Where(q => q.Status == QuizStatus.Active && q.Id == id)
+                .Select(q => new TakeQuizViewModel
+                {
+                    QuizId = q.Id,
+                    Title = q.Title,
+                    Answers = q.Questions
+                     .Where(qq => !qq.IsDeleted)
+                     .OrderBy(qq => qq.DisplayOrder)
+                     .Select(qq => new TakeAnswerSlotViewModel
+                     {
+                         QuestionId = qq.Id,
+                         Text = qq.Text,
+                         QuestionType = qq.QuestionType,
+                         Options = qq.Options
+                         .Select(opt => new TakeOptionViewModel
+                         {
+                             Id = opt.Id,
+                             Text = opt.Text
+                         }).ToList()
+                     }).ToList()
+                })
+                 .FirstOrDefaultAsync();
+
+            if (quiz is null) return NotFound();
+
+            return View(quiz); // This should be your ViewModel, not the entity
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Submit(SubmitQuizViewModel model)
+        {
+            if (!ModelState.IsValid)
+                // If model is invalid, redirect back to Take with an error
+                return RedirectToAction(nameof(Take), new { id = model.QuizId });
+
+            // Check Is the quiz actually Active?
+            var isActive = await _context.Quizzes.AnyAsync(q => q.Id == model.QuizId && q.Status == QuizStatus.Active);
+            if (!isActive) return NotFound();
+
+            // Load the TRUTH from the database
+            var dbQuestions = await _context.Questions
+                .Where(q => q.QuizId == model.QuizId && !q.IsDeleted)
+                .Include(q => q.Options)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var truth = dbQuestions.ToDictionary(q => q.Id);
+
+            int earnedScore = 0;
+            int maxScore = dbQuestions.Sum(q => q.Points); // Max score comes from DB, not browser!
+            var attemptAnswers = new List<AttemptAnswer>();
+
+            // Judge each submitted answer
+            foreach (var posted in model.Answers)
+            {
+                if (truth.TryGetValue(posted.QuestionId, out var q))
+                {
+                    // Find the option they picked WITHIN this specific question's options
+                    var chosen = q.Options.FirstOrDefault(o => o.Id == posted.SelectedOptionId);
+
+                    bool isCorrect = chosen != null && chosen.IsCorrect;
+                    int pointsEarned = isCorrect ? q.Points : 0;
+
+                    if (isCorrect)
+                    {
+                        earnedScore += pointsEarned;
+                    }
+
+                    // Build the Snapshot record
+                    attemptAnswers.Add(new AttemptAnswer
+                    {
+                        AttemptId = 0, // EF Core will fill this automatically
+                        QuestionId = posted.QuestionId,
+                        QuestionTextSnapshot = q.Text,                  // From DB truth
+                        SelectedOptionTextSnapshot = chosen?.Text,      // From DB truth (null if skipped)
+                        UserAnswer = posted.UserAnswer,                 // From browser (their typed words)
+                        IsCorrect = isCorrect,
+                        PointsEarned = pointsEarned
+                    });
+                }
+                // If TryGetValue is false, the browser sent a fake QuestionId. We safely ignore it.
+            }
+
+            // Save the attempt and all its answers in ONE transaction
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var attempt = new QuizAttempt
+            {
+                UserId = userId!,
+                QuizId = model.QuizId,
+                StartedAt = DateTime.UtcNow,
+                CompletedAt = DateTime.UtcNow,
+                Score = earnedScore,
+                MaxScore = maxScore,
+                Answers = attemptAnswers // EF Core cascades this save!
+            };
+
+            _context.QuizAttempts.Add(attempt);
+            await _context.SaveChangesAsync();
+
+            // Redirect to the results page
+            return RedirectToAction("Results", new { id = attempt.Id });
+        }
+
+
+
+
     }
 }
